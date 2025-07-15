@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ควบคุมและแสดงสถานะ 2 อุปกรณ์</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background-image: url('https://i.pinimg.com/originals/20/8f/3f/208f3f155cba674f690a0b16ad9f36f4.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color: #333;
+    }
+
+    h2 {
+      margin-top: 30px;
+      color: #d63384;
+      text-shadow: 2px 2px #fff;
+    }
+
+    .device {
+      background-color: rgba(255, 255, 255, 0.9);
+      border: 2px solid #ffb6c1;
+      border-radius: 15px;
+      padding: 25px;
+      margin: 30px auto;
+      width: 320px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .device h3 {
+      color: #ff69b4;
+    }
+
+    .status {
+      font-size: 22px;
+      margin-top: 15px;
+      color: #555;
+    }
+
+    button {
+      padding: 10px 25px;
+      margin: 10px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .on {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .on:hover {
+      background-color: #218838;
+    }
+
+    .off {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .off:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>ควบคุมและแสดงสถานะอุปกรณ์ด้วยความน่ารัก 💖</h2>
+
+  <!-- Device 1 -->
+  <div class="device">
+    <h3>อุปกรณ์ 1</h3>
+    <button class="on" onclick="setStatus('device1', 1)">เปิด</button>
+    <button class="off" onclick="setStatus('device1', 0)">ปิด</button>
+    <div id="status-device1" class="status">สถานะ: โหลดข้อมูล...</div>
+  </div>
+
+  <!-- Device 2 -->
+  <div class="device">
+    <h3>อุปกรณ์ 2</h3>
+    <button class="on" onclick="setStatus('device2', 1)">เปิด</button>
+    <button class="off" onclick="setStatus('device2', 0)">ปิด</button>
+    <div id="status-device2" class="status">สถานะ: โหลดข้อมูล...</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBN8OuiMFTZ7CrSe_Psy4PSW4xSX7bPWyA",
+      authDomain: "myiot-92b38.firebaseapp.com",
+      projectId: "myiot-92b38",
+      storageBucket: "myiot-92b38.firebasestorage.app",
+      messagingSenderId: "729539743207",
+      appId: "1:729539743207:web:8e2f298ea6f7e9b6118142",
+      measurementId: "G-SBEC3WLZ1M"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // เปลี่ยนสถานะอุปกรณ์
+    function setStatus(device, value) {
+      db.collection("devices").doc(device).set({ status: value }, { merge: true })
+        .then(() => console.log(`เปลี่ยน ${device} เป็น ${value}`))
+        .catch((error) => console.error("เกิดข้อผิดพลาด:", error));
+    }
+
+    // รับสถานะแบบเรียลไทม์
+    function listenStatus(device) {
+      const statusDiv = document.getElementById(`status-${device}`);
+      db.collection("devices").doc(device)
+        .onSnapshot((doc) => {
+          if (doc.exists) {
+            const status = doc.data().status;
+            statusDiv.textContent = "สถานะ: " + (status === 1 ? "เปิด" : "ปิด");
+          } else {
+            statusDiv.textContent = "สถานะ: ไม่มีข้อมูล";
+          }
+        }, (error) => {
+          statusDiv.textContent = "สถานะ: โหลดผิดพลาด";
+          console.error(error);
+        });
+    }
+
+    listenStatus("device1");
+    listenStatus("device2");
+  </script>
+
+</body>
+</html>
