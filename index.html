@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌸 IoT Dashboard (Pink Style)</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #fff0f5;
+      color: #4d004d;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e91e63;
+      margin-bottom: 30px;
+    }
+
+    .section {
+      background: #ffe4ec;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(233, 30, 99, 0.2);
+      padding: 20px;
+      margin: 30px auto;
+      max-width: 1000px;
+    }
+
+    .section h2 {
+      border-left: 6px solid #e91e63;
+      padding-left: 12px;
+      color: #e91e63;
+      margin-bottom: 10px;
+    }
+
+    input, button {
+      padding: 8px;
+      margin: 6px 4px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    input {
+      background-color: #fffafc;
+    }
+
+    button {
+      background-color: #e91e63;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #c2185b;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ffb6c1;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8bbd0;
+      color: #880e4f;
+    }
+
+    .actions button {
+      margin-right: 4px;
+      background-color: #f06292;
+    }
+
+    .actions button:last-child {
+      background-color: #d32f2f;
+    }
+
+    .actions button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌸 IoT Dashboard - Pink Edition</h1>
+
+  <div class="section">
+    <h2>➕ เพิ่มอุปกรณ์ใหม่</h2>
+    <input id="deviceId" placeholder="รหัสอุปกรณ์ (เช่น device001)" />
+    <input id="deviceName" placeholder="ชื่อห้อง" />
+    <input id="deviceLocation" placeholder="ตำแหน่ง" />
+    <input id="deviceMac" placeholder="MAC Address" />
+    <input id="deviceDate" type="date" />
+    <button onclick="addDevice()">เพิ่มอุปกรณ์</button>
+  </div>
+
+  <div class="section">
+    <h2>📋 รายการอุปกรณ์</h2>
+    <table id="deviceTable">
+      <thead>
+        <tr><th>รหัส</th><th>ชื่อ</th><th>ตำแหน่ง</th><th>MAC</th><th>เริ่มใช้งาน</th><th>จัดการ</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>📈 เพิ่ม Readings</h2>
+    <input id="readingId" placeholder="รหัสอุปกรณ์" />
+    <input id="temperature" type="number" placeholder="อุณหภูมิ (°C)" />
+    <input id="humidity" type="number" placeholder="ความชื้น (%)" />
+    <button onclick="addReading()">เพิ่ม readings</button>
+  </div>
+
+  <div class="section">
+    <h2>🌡️ ข้อมูล Readings</h2>
+    <table id="readingTable">
+      <thead>
+        <tr><th>รหัส</th><th>อุณหภูมิ</th><th>ความชื้น</th><th>จัดการ</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbHjCylW8f36QXzfRbfRkfJB5U7LejcPA",
+      authDomain: "nameiot-f5b73.firebaseapp.com",
+      projectId: "nameiot-f5b73",
+      storageBucket: "nameiot-f5b73.firebasestorage.app",
+      messagingSenderId: "237152974152",
+      appId: "1:237152974152:web:e6e1edd0f624065193ef7d",
+      measurementId: "G-QVWJ0ZEE19"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function loadDevices() {
+      const tbody = document.querySelector("#deviceTable tbody");
+      tbody.innerHTML = "";
+      db.ref("devices").once("value", snapshot => {
+        snapshot.forEach(child => {
+          const id = child.key;
+          const d = child.val();
+          tbody.innerHTML += `
+            <tr>
+              <td>${id}</td>
+              <td>${d.name}</td>
+              <td>${d.location}</td>
+              <td>${d.mac}</td>
+              <td>${d.start_date}</td>
+              <td class="actions">
+                <button onclick="editDevice('${id}')">แก้ไข</button>
+                <button onclick="deleteDevice('${id}')">ลบ</button>
+              </td>
+            </tr>
+          `;
+        });
+      });
+    }
+
+    function loadReadings() {
+      const tbody = document.querySelector("#readingTable tbody");
+      tbody.innerHTML = "";
+      db.ref("readings").once("value", snapshot => {
+        snapshot.forEach(child => {
+          const id = child.key;
+          const r = child.val();
+          tbody.innerHTML += `
+            <tr>
+              <td>${id}</td>
+              <td>${r.temperature} °C</td>
+              <td>${r.humidity} %</td>
+              <td class="actions">
+                <button onclick="editReading('${id}')">แก้ไข</button>
+                <button onclick="deleteReading('${id}')">ลบ</button>
+              </td>
+            </tr>
+          `;
+        });
+      });
+    }
+
+    function addDevice() {
+      const id = document.getElementById("deviceId").value.trim();
+      const name = document.getElementById("deviceName").value;
+      const location = document.getElementById("deviceLocation").value;
+      const mac = document.getElementById("deviceMac").value;
+      const start_date = document.getElementById("deviceDate").value;
+
+      if (id) {
+        db.ref("devices/" + id).set({ name, location, mac, start_date }).then(() => {
+          loadDevices();
+          alert("เพิ่มอุปกรณ์สำเร็จ!");
+        });
+      }
+    }
+
+    function addReading() {
+      const id = document.getElementById("readingId").value.trim();
+      const temperature = parseFloat(document.getElementById("temperature").value);
+      const humidity = parseFloat(document.getElementById("humidity").value);
+      if (id && !isNaN(temperature) && !isNaN(humidity)) {
+        db.ref("readings/" + id).set({ temperature, humidity }).then(() => {
+          loadReadings();
+          alert("เพิ่ม readings สำเร็จ!");
+        });
+      }
+    }
+
+    function editDevice(id) {
+      const ref = db.ref("devices/" + id);
+      ref.once("value", snap => {
+        const d = snap.val();
+        const name = prompt("ชื่อห้อง:", d.name);
+        const location = prompt("ตำแหน่ง:", d.location);
+        const mac = prompt("MAC:", d.mac);
+        const start_date = prompt("วันที่เริ่ม:", d.start_date);
+        ref.set({ name, location, mac, start_date }).then(loadDevices);
+      });
+    }
+
+    function deleteDevice(id) {
+      if (confirm("ลบอุปกรณ์นี้ใช่ไหม?")) {
+        db.ref("devices/" + id).remove().then(loadDevices);
+      }
+    }
+
+    function editReading(id) {
+      const ref = db.ref("readings/" + id);
+      ref.once("value", snap => {
+        const r = snap.val();
+        const temperature = parseFloat(prompt("อุณหภูมิ:", r.temperature));
+        const humidity = parseFloat(prompt("ความชื้น:", r.humidity));
+        ref.set({ temperature, humidity }).then(loadReadings);
+      });
+    }
+
+    function deleteReading(id) {
+      if (confirm("ลบ readings นี้ใช่ไหม?")) {
+        db.ref("readings/" + id).remove().then(loadReadings);
+      }
+    }
+
+    loadDevices();
+    loadReadings();
+  </script>
+
+</body>
+</html>
